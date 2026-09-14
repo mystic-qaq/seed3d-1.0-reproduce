@@ -1,0 +1,143 @@
+====================================================================================================
+Seed3D-mini VAE  <->  Hunyuan3D-2.1 ShapeVAE   numerical parity report
+generated: 2026-09-14 01:52:40   device=cpu   dtype=torch.float32
+reference sources: /home/xy/seed3d-1.0-reproduce/third_party/hunyuan3d-2.1/hy3dshape
+reference config : /home/xy/seed3d-1.0-reproduce/checkpoints/hunyuan3d-vae-v2-1/config.yaml
+checkpoint       : /home/xy/seed3d-1.0-reproduce/checkpoints/hunyuan3d-vae-v2-1/model.fp16.ckpt
+====================================================================================================
+
+stage                                                  status    max|diff|     rel.err       |ref|      tol  note
+-----------------------------------------------------------------------------------------------------------------
+reference import (unmodified third_party sources)      PASS              -           -           -        -  stubbed sys.modules['hy3dshape'] (its __init__ imports the paint/pipelines stack); stubbed sys.modules['hy3dshape.models'] (its __init__ imports conditioner/denoisers); stubbed sys.modules['hy3dshape.utils'] (ModuleNotFoundError: No module named 'omegaconf'); stubbed sys.modules['torch_cluster'] (not installed; reference fps() is only reached through a patched entry point)
+fourier_embedder(include_pi=True)                      PASS      0.000e+00   0.000e+00   3.677e+01    1e-04  
+fourier_embedder(include_pi=True) frequencies          PASS      0.000e+00   0.000e+00   4.643e+02    1e-04  
+fourier_embedder(include_pi=False)                     PASS      0.000e+00   0.000e+00   3.724e+01    1e-04  
+fourier_embedder(include_pi=False) frequencies         PASS      0.000e+00   0.000e+00   1.478e+02    1e-04  
+layout discovery: c_kv identity                        INFO              -           -           -        -  identity=0.000e+00, transposed=7.685e-01 -> identity
+layout discovery: c_qkv permutation                    INFO              -           -           -        -  identity=7.993e-01, permuted=0.000e+00 -> [heads,3,head_dim] -> [3,heads,head_dim]
+synthetic/mapping coverage                             PASS              -           -           -        -  copied=95 unmapped_source=0 missing_target=0 uncovered_target=0; reference keys=95
+synthetic/sampling: embedded query                     PASS      0.000e+00   0.000e+00   5.768e+01    1e-04  my sampler+PE vs reference sampler
+synthetic/sampling: embedded data                      PASS      0.000e+00   0.000e+00   1.631e+02    1e-04  
+synthetic encoder/input_proj(query)                    PASS      0.000e+00   0.000e+00   5.380e+01    1e-04  
+synthetic encoder/input_proj(data)                     PASS      0.000e+00   0.000e+00   1.515e+02    1e-04  
+synthetic encoder/cross_attn                           PASS      0.000e+00   0.000e+00   6.298e+01    1e-04  
+synthetic encoder/self_attn (x2)                       PASS      0.000e+00   0.000e+00   7.946e+01    1e-04  
+synthetic encoder/ln_post                              PASS      0.000e+00   0.000e+00   1.280e+02    1e-04  
+synthetic encoder/pre_kl moments                       PASS      0.000e+00   0.000e+00   3.785e+01    1e-04  
+synthetic encoder/posterior.mean                       PASS      0.000e+00   0.000e+00   2.831e+01    1e-04  
+synthetic encoder/posterior.logvar                     PASS      0.000e+00   0.000e+00   2.512e+01    1e-04  
+synthetic encoder/posterior.std                        PASS      0.000e+00   0.000e+00   5.074e+01    1e-04  
+decoder[8^3 queries]/query_proj (via output)           PASS      0.000e+00   0.000e+00   1.683e+01    1e-04  geo_decoder has no query self-attn; num_decoder_layers=0
+synthetic/encode() mode                                PASS      0.000e+00   0.000e+00   2.831e+01    1e-03  
+synthetic/encode() sample(seeded)                      PASS      0.000e+00   0.000e+00   5.662e+01    1e-03  
+sharpedge sampler: embedded query                      PASS      0.000e+00   0.000e+00   5.767e+01    1e-04  pc_size=512, sharpedge=512
+sharpedge sampler: embedded data                       PASS      0.000e+00   0.000e+00   1.631e+02    1e-04  
+sharpedge encoder/input_proj(query)                    PASS      0.000e+00   0.000e+00   5.215e+01    1e-04  
+sharpedge encoder/input_proj(data)                     PASS      0.000e+00   0.000e+00   1.484e+02    1e-04  
+sharpedge encoder/cross_attn                           PASS      0.000e+00   0.000e+00   6.262e+01    1e-04  
+sharpedge encoder/self_attn (x2)                       PASS      0.000e+00   0.000e+00   8.422e+01    1e-04  
+sharpedge encoder/ln_post                              PASS      0.000e+00   0.000e+00   1.280e+02    1e-04  
+sharpedge encoder/pre_kl moments                       PASS      0.000e+00   0.000e+00   3.449e+01    1e-04  
+sharpedge encoder/posterior.mean                       PASS      0.000e+00   0.000e+00   2.363e+01    1e-04  
+sharpedge encoder/posterior.logvar                     PASS      0.000e+00   0.000e+00   2.512e+01    1e-04  
+sharpedge encoder/posterior.std                        PASS      0.000e+00   0.000e+00   5.304e+01    1e-04  
+sharpedge encode() mode                                PASS      0.000e+00   0.000e+00   2.363e+01    1e-03  
+sampler token counts (non-integral sharp-edge split)   REPORT            -           -           -        -  pc_size=100, sharpedge=200, M=10, ratio=2: num_random_query=3.3333; fps calls=[(6, 0.5555555555555555, 4), (13, 0.5128205128205129, 7)]; reference -> 11 query / 19 data tokens, seed3d_mini -> 10 query / 20 data tokens. Differs only for non-integral splits; the shipped config is integral.
+sampler token count (shipped config)                   PASS              -           -           -        -  ceil(81920 * float32(0.05)) = 4096 == num_latents == seed3d_mini's count
+checkpoint/encoder input (full: 4096x81920)            INFO              -           -           -        -  pc=(1, 81920, 3) feats=(1, 81920, 4)
+checkpoint/encoder sampled shapes (full)               INFO              -           -           -        -  query=(1, 4096, 55) data=(1, 81920, 55)
+checkpoint/independent copies guard                    PASS              -           -           -        -  identical values, distinct storage for both models
+checkpoint encoder[full]/input_proj(query)             PASS      0.000e+00   0.000e+00   7.516e+02    1e-04  
+checkpoint encoder[full]/input_proj(data)              PASS      0.000e+00   0.000e+00   3.360e+03    1e-04  
+checkpoint encoder[full]/cross_attn                    PASS      0.000e+00   0.000e+00   6.750e+03    1e-04  
+checkpoint encoder[full]/self_attn (x8)                PASS      0.000e+00   0.000e+00   9.836e+04    1e-04  
+checkpoint encoder[full]/ln_post                       PASS      0.000e+00   0.000e+00   1.149e+03    1e-04  
+checkpoint encoder[full]/pre_kl moments                PASS      0.000e+00   0.000e+00   7.982e+02    1e-04  
+checkpoint encoder[full]/posterior.mean                PASS      0.000e+00   0.000e+00   1.893e+02    1e-04  
+checkpoint encoder[full]/posterior.logvar              PASS      0.000e+00   0.000e+00   7.755e+02    1e-04  
+checkpoint encoder[full]/posterior.std                 PASS      0.000e+00   0.000e+00   4.689e+02    1e-04  
+sampling/when pc_size < num_latents*ratio              REPORT            -           -           -        -  num_latents=512, downsample_ratio=20, points=5120: reference raises RuntimeError (shape '[10240, 3]' is invalid for input of size 15360); seed3d_mini returns 512 (clamped to the available points). Identical behaviour whenever pc_size >= num_latents*downsample_ratio, which holds for the shipped config (81920 == 4096*20).
+posterior/split dim=-1 mean                            PASS      0.000e+00   0.000e+00   8.806e+00    1e-04  
+posterior/split dim=-1 logvar                          PASS      0.000e+00   0.000e+00   8.423e+00    1e-04  
+posterior/kl() formula                                 REPORT            -           -           -        -  same formula, different reduction: reference kl() hard-codes dims=(1,2,3) + returns per-sample values (IndexError on 3-D latents), mine returns one global-mean scalar (mine=0.876233, reference formula=0.876233)
+checkpoint/decoder query grid                          INFO              -           -           -        -  (1, 32768, 3) (32^3 in [-1,1])
+decoder[32^3 queries]/query_proj (via output)          PASS      0.000e+00   0.000e+00   1.733e+02    1e-04  geo_decoder has no query self-attn; num_decoder_layers=0
+decoder[16^3 queries]/query_proj (via output)          PASS      0.000e+00   0.000e+00   6.130e+01    1e-04  geo_decoder has no query self-attn; num_decoder_layers=0
+checkpoint/decoder grid-independence                   INFO              -           -           -        -  16^3 grid is a sub-grid of 32^3; both agree by construction
+checkpoint/latent-mode mapping coverage                PASS              -           -           -        -  copied=410/410 reference tensors (num_decoder_layers=16), missing_target=0, uncovered_target=0
+checkpoint/latent-mode decoder: latent trunk (x16)     PASS      0.000e+00   0.000e+00   3.212e+03    1e-04  post_kl + 16 transformer blocks on the latent tokens
+checkpoint/latent-mode decoder: full 32^3 field        PASS      0.000e+00   0.000e+00   1.807e+02    1e-04  complete reference decode path, all 410 checkpoint tensors
+checkpoint/decoder 1 layer: mine(query-side) vs ref(latent-side, 1 layer) REPORT    2.035e+00   5.229e-01   1.746e+02        -  expected to differ: self-attention placement (and only that) differs
+checkpoint/transformer block on latents (mapped weights) PASS      0.000e+00   0.000e+00   1.061e+03    1e-04  validates the c_qkv permutation + qk-norm rename with real weights
+checkpoint/decoder 1 vs ref 16 layers (full decode)    REPORT    1.980e+00   2.641e-01   1.807e+02        -  reference num_decoder_layers=16 acts on latents; mine has 1 query-side layer
+checkpoint/transformer stack x16 on latents            PASS      0.000e+00   0.000e+00   3.212e+03    1e-04  
+checkpoint/encode[full] sampler: embedded query        PASS      0.000e+00   0.000e+00   3.262e+02    1e-04  my random-subset+FPS+PE path vs reference sample_points_and_latents
+checkpoint/encode[full] sampler: embedded data         PASS      0.000e+00   0.000e+00   1.459e+03    1e-04  
+checkpoint/encode[full] latents (mode)                 PASS      0.000e+00   0.000e+00   1.915e+02    1e-03  
+checkpoint/encode[full] latents (sample, seeded)       PASS      0.000e+00   0.000e+00   5.059e+02    1e-03  
+-----------------------------------------------------------------------------------------------------------------
+TOTAL: 56 PASS, 0 FAIL, 5 REPORT, 6 SKIP/INFO
+
+====================================================================================================
+WEIGHT MAPPING RULES (see map_reference_state_dict / discover_layouts)
+====================================================================================================
+reference config: /home/xy/seed3d-1.0-reproduce/checkpoints/hunyuan3d-vae-v2-1/config.yaml
+checkpoint: /home/xy/seed3d-1.0-reproduce/checkpoints/hunyuan3d-vae-v2-1/model.fp16.ckpt
+  - self-attn c_qkv rows: [heads=16, 3, head_dim=64] (ref) -> [3, heads, head_dim] (mine); w_mine[i*W+h*d+dd] = w_ref[h*3d+i*d+dd]
+  - cross-attn c_kv rows: identity (ref [heads,2,head_dim] == mine [heads,2,head_dim], k before v)
+  - qk-norm relocation: ref '<mod>.attn.attention.{q,k}_norm' -> mine '<mod>.attn.{q,k}_norm'
+  - relocation: ref 'pre_kl' -> mine 'encoder.pre_kl'
+  - relocation: ref 'post_kl' -> mine 'decoder.latents_proj'
+  - relocation: ref 'transformer.resblocks.*' -> mine 'decoder.self_attn.resblocks.*' (reference applies them to the latent tokens; seed3d_mini does too in 'latent' mode and applies them to query tokens in the default 'query' mode)
+  - resolved geometry: heads=16, width=1024, head_dim=64
+  - reference params dropped (no target slot): decoder.self_attn.resblocks x225
+  coverage: copied=185 unmapped_source=0 missing_target=225 uncovered_target=0
+  reference params: 410; mapped: 185
+
+====================================================================================================
+ENVIRONMENT / SHIMS
+====================================================================================================
+  - stubbed sys.modules['hy3dshape'] (its __init__ imports the paint/pipelines stack)
+  - stubbed sys.modules['hy3dshape.models'] (its __init__ imports conditioner/denoisers)
+  - stubbed sys.modules['hy3dshape.utils'] (ModuleNotFoundError: No module named 'omegaconf')
+  - stubbed sys.modules['torch_cluster'] (not installed; reference fps() is only reached through a patched entry point)
+  - CPU float32 throughout; the reference checkpoint is cast to float32 before being loaded into either model.
+
+====================================================================================================
+KNOWN DIVERGENCES (documented, not asserted)
+====================================================================================================
+1. Decoder-side self-attention placement - a *switch*, not a limitation.
+   reference  : ShapeVAE.decode(z) = transformer(post_kl(z)), then geo_decoder(queries, .)
+                -> 'transformer' (num_decoder_layers=16 in hunyuan3d-vae-v2-1) applies
+                   self-attention to the LATENT tokens before cross-attention.
+   seed3d_mini: decoder_self_attn='query' (default, Seed3D report Eq. 2) applies the trunk
+                to the QUERY tokens; 'latent' reproduces the reference placement; 'none'
+                is a single cross-attention decoder.
+   evidence   : 'latent' mode is ASSERTED bit-identical for the complete decode path with all
+                410 checkpoint tensors mapped (num_decoder_layers=16, nothing dropped);
+                'query' with 1 layer differs by ~2.0 max|d| (rel 0.52) vs 1 latent-side
+                layer and ~2.0 (rel 0.26) vs the checkpoint's 16 latent-side layers.
+   coverage   : with the default 'query' + num_decoder_layers=1 only 1 of the 16
+                'transformer.resblocks' has a slot, so 225 reference tensors are dropped
+                (reported as 'missing_target'); 'latent' mode uses all of them.
+2. Naming/semantics: reference ShapeVAE.decode(z) returns transformed LATENT tokens;
+   seed3d_mini Seed3DVAE.decode(queries, z) returns the decoded field. Same computation,
+   different boundary.
+3. post_kl/latents_proj: reference always has a learned post_kl: Linear(embed_dim, width);
+   seed3d_mini's decoder.latents_proj is nn.Identity when embed_dim == width, so in that
+   (unused) corner case two post_kl tensors would have no slot.
+4. DiagonalGaussianDistribution.kl(): identical formula, different reduction. Reference
+   hard-codes dims=(1,2,3) and returns per-sample values (IndexError on the 3-D latents
+   this VAE actually produces); seed3d_mini returns one mean over all elements.
+5. seed3d_mini adds an optional tanh/truncation head (tanh_output, truncation) that the
+   reference does not have; with label_type='binary' it is disabled (tanh_output=False),
+   which is what these tests use. The reference's label_type never enters its VAE forward.
+6. Sampler token-count semantics for sharp-edge blocks (corner case).
+   a) pc_size < num_latents * downsample_ratio: the reference reshapes by the requested
+      size and raises RuntimeError; seed3d_mini clamps and returns min(num_latents, pc_size).
+   b) pc_sharpedge_size > 0 with a NON-integral split: torch_cluster.fps sizes its output
+      as ceil(deg*ratio) in float32, so a fractional num_random_query (3.333) becomes 4
+      tokens, while seed3d_mini rounds the split to int and takes the complement
+      (3 + 7 = 10 vs the reference's 4 + 7 = 11); data-token counts differ too.
+      Both agree for integral splits, including the shipped config:
+      ceil(81920 * float32(4096/81920)) == 4096 == num_latents.

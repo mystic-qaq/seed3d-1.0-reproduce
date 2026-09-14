@@ -1,0 +1,73 @@
+# Seed3D-DiT (mini) -- stage 2: rectified flow over frozen VAE latents
+#
+# Faithful to the report (Sec. 2.1.2) at a scale that trains on 4x RTX3090:
+#   dual image encoder (DINOv2 + RADIO) fused channel-wise, FLUX-style
+#   double-stream + single-stream backbone, velocity prediction, logit-normal
+#   timesteps with a length-aware shift, CFG dropout on the condition.
+#
+# The report's model is 1.5B params with 4096 latent tokens; this is ~46M params
+# over 256 tokens (see docs/REPRODUCTION_NOTES.md for the scaling rationale).
+dit:
+  _target: seed3d_mini.models.dit.Seed3DDiT
+  in_channels: 32              # == VAE embed_dim
+  hidden_size: 512
+  num_heads: 8
+  depth: 8                     # double-stream blocks
+  depth_single_blocks: 12      # single-stream blocks
+  mlp_ratio: 4.0
+  num_latents: 512
+  qkv_bias: true
+  context_in_dim: 1024        # == conditioner.cond_dim
+
+conditioner:
+  _target: seed3d_mini.models.conditioner.ImageConditioner
+  encoder_type: dual
+  image_size: 512
+  cond_dim: 1024
+  drop_ratio: 0.1
+  main_version: checkpoints/dinov2-base
+  additional_version: checkpoints/C-RADIOv3-B
+  trust_remote_code: true      # RADIO ships its modelling code in-repo
+
+flow_matching:
+  base_tokens: 128
+  max_tokens: 4096
+  base_shift: 0.5
+  max_shift: 1.15
+  logit_normal_mean: 0.0
+  logit_normal_std: 1.0
+
+# PT -> CT -> SFT, expressed as a schedule over (max_latents, lr).  The report's
+# three stages differ mainly in token length / data quality / learning rate.
+stage_schedule:
+  - {until: 8000,  max_latents: 256, lr: 2.0e-4}    # PT  short latents
+  - {until: 20000, max_latents: 512, lr: 1.5e-4}    # CT  longer latents
+  - {until: 100000000, max_latents: 512, lr: 6.0e-5} # SFT lower lr
+
+data:
+  latent_shard_dir: data/latents_mini
+  image_size: 512
+  max_latents: 512
+
+training:
+  output_dir: checkpoints/dit_mini
+  steps: 20000
+  # 16 samples/GPU peaked at 18.3 GB.  This is a *shared* machine (8-18 GB already
+  # resident on most GPUs), so the mini run uses 4 x 4: the same effective batch
+  # size with a peak around 5-6 GB, which fits anywhere.
+  # On an idle 24 GB GPU, batch_size 16 / grad_accum 1 is ~2x faster per step.
+  batch_size: 4
+  grad_accum: 4
+  lr: 2.0e-4
+  betas: [0.9, 0.99]
+  weight_decay: 0.0
+  warmup_steps: 500
+  min_lr_ratio: 0.05
+  grad_clip: 1.0
+  amp: true
+  amp_dtype: bf16
+  cfg_drop_prob: 0.1
+  num_workers: 8
+  seed: 0
+  log_every: 20
+  save_every: 2000

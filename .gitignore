@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------------------
+# environments and vendored code
+# ---------------------------------------------------------------------------
+envs/
+third_party/
+
+# ---------------------------------------------------------------------------
+# data: regenerable with scripts/prepare_data.py (see docs/DATA_PIPELINE.md)
+# ---------------------------------------------------------------------------
+data/raw/
+data/processed/
+data/shards/
+data/latents_mini/
+data/_smoke_*/
+
+# ---------------------------------------------------------------------------
+# model weights / checkpoints: 250-300 MB each, far above GitHub's 100 MB limit
+# and regenerable with scripts/run_mini.sh
+# ---------------------------------------------------------------------------
+checkpoints/
+!checkpoints/.gitkeep
+
+# ---------------------------------------------------------------------------
+# run artefacts: keep the small text reports, drop the binaries
+#   artifacts/**/*.pt      checkpoints written by dry runs / smoke tests
+#   artifacts/**/*.glb     meshes (the interesting ones are described in the docs)
+#   *.log                  raw stdout, reproducible from the commands
+# ---------------------------------------------------------------------------
+artifacts/**/*.pt
+artifacts/**/*.glb
+artifacts/**/*.npz
+artifacts/**/*.npy
+artifacts/logs/*.log
+artifacts/_smoke_*/
+artifacts/dryrun_*/
+
+# reference material (keep docs/seed3d.txt, drop the 34 MB source PDF)
+docs/*.pdf
+docs/seed3d.html
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
